@@ -97,7 +97,7 @@ class DingTalkHandler():
                 "msgKey": "sampleMarkdown",
                 "msgParam": json.dumps({
                     "title": "IMAGE @" + nick + " ", 
-                    "text": images + " \n " + "@" + nick
+                    "text": images
                 }),
                 "robotCode": robotCode,
                 "userIds": [staffid]
@@ -131,7 +131,7 @@ class DingTalkHandler():
                 "msgKey": "sampleMarkdown",
                 "msgParam": json.dumps({
                     "title": "IMAGE @" + nick + " ", 
-                    "text": images + " \n " + "@" + nick
+                    "text": images
                 }),
                 "robotCode": robot_code,
                 "openConversationId": conversation_id,
@@ -146,7 +146,7 @@ class DingTalkHandler():
             resp = {
                 "msgKey": "sampleText",
                 "msgParam": json.dumps({
-                    "content": reply + " \n " + "@" + nick
+                    "content": reply
                 }),
                 "robotCode": robot_code,
                 "openConversationId": conversation_id,
@@ -178,7 +178,7 @@ class DingTalkHandler():
                 "msgtype": "markdown",
                 "markdown": {
                     "title": "IMAGE @" + nick + " ", 
-                    "text": images + " \n " + "@" + nick
+                    "text": images
                 },
                 "at": {
                     "atUserIds": [
@@ -208,7 +208,7 @@ class DingTalkHandler():
         reply = channel.handle(data)
 
         type = data['conversationType']
-        if type == "1":
+        if not self.dingtalk_token or type == "1":
             reply_json = self.build_response(reply, data)
             self.notify_dingtalk(data, reply_json)
         else:

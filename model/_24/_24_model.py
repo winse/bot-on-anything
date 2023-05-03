@@ -16,4 +16,4 @@ class _24Model(Model):
 
     def reply(self, query, context=None):
         list = _24.calcuate(query)
-        return '\n'.join(list) if len(list) > 0 else "None"
+        return '\n'.join(list) if len(list) > 0 else "格式：num num num num, 比如输入：@me 12 12 12 12 "
