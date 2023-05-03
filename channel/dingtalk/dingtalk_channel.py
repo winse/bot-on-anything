@@ -17,6 +17,7 @@ from channel.channel import Channel
 
 class DingTalkHandler():
     def __init__(self, config):
+        self.dingtalk_model = config.get('dingtalk_model')
         self.dingtalk_key = config.get('dingtalk_key')
         self.dingtalk_secret = config.get('dingtalk_secret')
         self.dingtalk_token = config.get('dingtalk_token')
@@ -202,7 +203,10 @@ class DingTalkHandler():
         return resp
     
     def chat(self, channel, data):
+        if self.dingtalk_model:
+            data["__model"] = self.dingtalk_model
         reply = channel.handle(data)
+
         type = data['conversationType']
         if type == "1":
             reply_json = self.build_response(reply, data)
@@ -248,6 +252,9 @@ class DingTalkChannel(Channel):
             if img_match_prefix:
                 prompt = prompt.split(img_match_prefix, 1)[1].strip()
                 context['type'] = 'IMAGE_CREATE'
+
+            if '__model' in data:
+                context['model'] = data['__model']
             id = sender_id
             context['from_user_id'] = str(id)
             reply = super().build_reply_content(prompt, context)

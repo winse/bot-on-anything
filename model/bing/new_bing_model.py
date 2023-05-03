@@ -6,7 +6,7 @@ from common import log
 from EdgeGPT import Chatbot, ConversationStyle
 from ImageGen import ImageGen
 from common import functions
-from model.bing.jailbroken_sydney import SydneyBot
+#from model.bing.jailbroken_sydney import SydneyBot
 
 user_session = dict()
 suggestion_session = dict()
@@ -23,8 +23,9 @@ class BingModel(Model):
         try:
             self.cookies = model_conf_val("bing", "cookies")
             self.jailbreak = model_conf_val("bing", "jailbreak")
-            self.bot = SydneyBot(cookies=self.cookies, options={}) if (
-                self.jailbreak) else Chatbot(cookies=self.cookies)
+            #self.bot = SydneyBot(cookies=self.cookies, options={}) if (
+            #    self.jailbreak) else Chatbot(cookies=self.cookies)
+            self.bot = Chatbot(cookies=self.cookies)
         except Exception as e:
             log.warn(e)
 
@@ -171,3 +172,4 @@ class BingModel(Model):
             user_session.get(context['from_user_id'], None).reset()
             log.warn("[NewBing] reply={}", answer)
             return "对话被接口拒绝，已开启新的一轮对话。"
+

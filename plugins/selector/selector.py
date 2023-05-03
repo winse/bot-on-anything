@@ -18,6 +18,7 @@ class Selector(Plugin):
             log.warn("[Selector] init failed")
             raise e
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.select_model
+        self.handlers[Event.ON_BRIDGE_HANDLE_CONTEXT] = self.select_model
         self.handlers[Event.ON_BRIDGE_HANDLE_STREAM_CONTEXT] = self.select_model
         log.info("[Selector] inited")
 

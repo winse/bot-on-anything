@@ -11,6 +11,10 @@
       {
         "model":"bard",
         "prefix":["#google"]
+      },
+      {
+        "model":"24",
+        "prefix":["#24"]
       }
     ] 
 }
