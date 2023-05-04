@@ -10,7 +10,27 @@ class Expr(object):
             self._result = result
         else:
             self.set_expression(left, right, op)
-            self.unfold()
+            self.unfold() # TODO: 去重
+            self.sort_by_symbol()
+
+    def sort_by_symbol(self):
+        if not isinstance(self._right, N):
+            # -+ -> +-
+            if self._operator == '-' and self._right._operator == '+':
+                self.set_expression(
+                    Expr(self._left, self._right._right, '+'),
+                    self._right._left,
+                    '-'
+                )
+                self.sort_by_symbol()  # 继续处理
+            # /* -> */
+            elif self._operator == '/' and self._right._operator == '*':
+                self.set_expression(
+                    Expr(self._left, self._right._right, '*'),
+                    self._right._left,
+                    '/'
+                )
+                self.sort_by_symbol()  # 继续处理
 
     def unfold(self):
         if not isinstance(self._right, N):
