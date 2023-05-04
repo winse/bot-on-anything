@@ -6,13 +6,41 @@ import re
 
 class Expr(object):
     def __init__(self, left=None, right=None, op=None, result=None):
-        self._result = result
-        self.set_expression(left, right, op)
+        if result is not None:
+            self._result = result
+        else:
+            self.set_expression(left, right, op)
+            self.unfold()
+
+    def unfold(self):
+        if not isinstance(self._right, N):
+            # 可能的话把右边拆开
+            if self._operator == '+' or self._operator == '-':
+                if self._right._operator == '+' or self._right._operator == '-':
+                    self.set_expression(
+                        Expr(self._left, self._right._left, self._operator),
+                        self._right._right,
+                        self._right._operator if self._operator == '+' else (
+                            '-' if self._right._operator == '+' else '+')
+                    )
+                    self.unfold()  # 继续处理
+            elif self._operator == '*' or self._operator == '/':
+                if self._right._operator == '*' or self._right._operator == '/':
+                    self.set_expression(
+                        Expr(self._left, self._right._left, self._operator),
+                        self._right._right,
+                        self._right._operator if self._operator == '*' else (
+                            '/' if self._right._operator == '*' else '*')
+                    )
+                    self.unfold()  # 继续处理
+
+        return self
 
     def set_expression(self, left_expr, right_expr, operator):
         self._left = left_expr
         self._right = right_expr
         self._operator = operator
+        self._result = None  # 设置默认值
 
         try:
             if Expr.hasValue(left_expr) and Expr.hasValue(right_expr):
@@ -20,10 +48,9 @@ class Expr(object):
                     left_expr._result, operator, right_expr._result)
                 # print(expression)
                 result = eval(expression)
-                if(result >= 0):
+                if(result >= 0):  # 只考虑自然数
                     self._result = result
-                else:  # 不考虑负数
-                    self._result = None
+
         except(ZeroDivisionError):
             self._result = None
 
@@ -68,14 +95,17 @@ class Expr(object):
 
     def __repr__(self):
         if self._operator:
-            return '<Node operator="{}">'.format(self._operator)
+            return "({}{}{})".format(self._left, self._operator, self._right)
         else:
-            return '<Node value="{}">'.format(self._result)
+            return '{}'.format(self._result)
 
 
 class N(Expr):
     def __init__(self,  result):
         super().__init__(None, None, None, result)
+
+    def unfold(self):
+        return self
 
     def __eq__(self, other):
         isTypeN = isinstance(other, self.__class__)
@@ -143,9 +173,12 @@ class _24(object):
                             if Expr.hasValue(e) and math.isclose(e._result, 24, rel_tol=1e-10):
                                 list2.append(e)
 
-        print("||".join(map(str, list2)))
+        print(" || ".join(map(str, list2)))
+        print("---")
         list3 = set(list2)  # 去除重复项
-        print("||".join(map(str, list3)))
+
+        print(" || ".join(map(str, list3)))
+        print("---")
         return list(map(str, list3))
 
 # query = input("请输入第4个数字:")
@@ -157,5 +190,6 @@ class _24(object):
 #     print("NO！")
 
 
-# print("\n".join(_24.calcuate(" 2 10 12 5 ")))
+#print("\n".join(_24.calcuate(" 2 10 12 5 ")))
+#print("\n".join(_24.calcuate(" 12 12 12 12  ")))
 
