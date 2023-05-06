@@ -281,6 +281,7 @@ def chat():
     log.info("[DingTalk] chat={}".format(str(request.data)))
     token = request.headers.get('token')
     data = json.loads(request.data)
+    log.info("[DingTalk] chat={}".format(json.dumps(data, indent=2, ensure_ascii=False)))
     if data:
         content = data['text']['content']
         if not content:

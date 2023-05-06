@@ -5,36 +5,23 @@ import re
 
 
 class Expr(object):
-    def __init__(self, left=None, right=None, op=None, result=None):
+    _left: 'Expr'
+    _right: 'Expr'
+    _operator: str
+    _result: float
+
+    def __init__(self, left=None, right=None, op: str = None, result: float = None):
         if result is not None:
             self._result = result
         else:
             self.set_expression(left, right, op)
-            self.unfold() # TODO: 去重
-            self.sort_by_symbol()
+            # 标准化
+            self.normalize()
 
-    def sort_by_symbol(self):
-        if not isinstance(self._right, N):
-            # -+ -> +-
-            if self._operator == '-' and self._right._operator == '+':
-                self.set_expression(
-                    Expr(self._left, self._right._right, '+'),
-                    self._right._left,
-                    '-'
-                )
-                self.sort_by_symbol()  # 继续处理
-            # /* -> */
-            elif self._operator == '/' and self._right._operator == '*':
-                self.set_expression(
-                    Expr(self._left, self._right._right, '*'),
-                    self._right._left,
-                    '/'
-                )
-                self.sort_by_symbol()  # 继续处理
-
-    def unfold(self):
-        if not isinstance(self._right, N):
-            # 可能的话把右边拆开
+    def normalize(self):
+        # 左边括号（表达式）优先
+        if not isinstance(self._right, N):  # 右边是表达式，拆成左表达式的形式
+            # ? + (? - ?)
             if self._operator == '+' or self._operator == '-':
                 if self._right._operator == '+' or self._right._operator == '-':
                     self.set_expression(
@@ -43,7 +30,8 @@ class Expr(object):
                         self._right._operator if self._operator == '+' else (
                             '-' if self._right._operator == '+' else '+')
                     )
-                    self.unfold()  # 继续处理
+                    self.normalize()  # 继续处理
+            # ? * (? / ?)
             elif self._operator == '*' or self._operator == '/':
                 if self._right._operator == '*' or self._right._operator == '/':
                     self.set_expression(
@@ -52,7 +40,31 @@ class Expr(object):
                         self._right._operator if self._operator == '*' else (
                             '/' if self._right._operator == '*' else '*')
                     )
-                    self.unfold()  # 继续处理
+                    self.normalize()  # 继续处理
+        # 左边是表达式，+*优先，大数优先
+        elif not isinstance(self._left, N):
+            # (? - ?) + ?
+            if self._operator == '+' or self._operator == '-':
+                _mid = self._left._right
+                if (self._left._operator == '-' and self._operator == '+') or (self._left._operator == self._operator and self._right._result > _mid._result):
+                    self._left.set_expression(
+                        self._left._left,
+                        self._right,
+                        self._operator
+                    )
+                    self.set_expression(self._left, _mid, self._left._operator)
+                    self.normalize()  # 继续处理
+            # (? / ?) * ?
+            elif self._operator == '*' or self._operator == '/':
+                _mid = self._left._right
+                if (self._left._operator == '/' and self._operator == '*') or (self._left._operator == self._operator and self._right._result > _mid._result):
+                    self._left.set_expression(
+                        self._left._left,
+                        self._right,
+                        self._operator
+                    )
+                    self.set_expression(self._left, _mid, self._left._operator)
+                    self.normalize()  # 继续处理
 
         return self
 
@@ -60,30 +72,30 @@ class Expr(object):
         self._left = left_expr
         self._right = right_expr
         self._operator = operator
-        self._result = None  # 设置默认值
+        self._result = math.nan  # 设置默认值
 
         try:
             if Expr.hasValue(left_expr) and Expr.hasValue(right_expr):
                 expression = "{} {} {}".format(
                     left_expr._result, operator, right_expr._result)
                 # print(expression)
+
                 result = eval(expression)
                 if(result >= 0):  # 只考虑自然数
                     self._result = result
-
         except(ZeroDivisionError):
-            self._result = None
+            self._result = math.nan
 
     @staticmethod
     def hasValue(expr):
-        return expr is not None and expr._result is not None
+        return expr is not None and not math.isnan(expr._result)
 
     def __eq__(self, other):
         isNode = isinstance(other, self.__class__)
         if not isNode:
             return False
 
-        if (
+        return (
             self._operator == other._operator
             and self._result == self._result
             and (
@@ -91,10 +103,7 @@ class Expr(object):
                     self._operator == '+' or self._operator == '*'
                 ) else [self._left, self._right] == [other._left, other._right]
             )
-        ):
-            return True
-        else:
-            return False
+        )
 
     def __hash__(self) -> int:
         hash = 1
@@ -110,21 +119,36 @@ class Expr(object):
         hash = 31 * hash + self._operator.__hash__()
         return hash
 
-    def __str__(self) -> str:
-        return "({}{}{})".format(self._left, self._operator, self._right)
+    def __str__(self, outerOperator=None, isOuterLeftChild=None):
+        return self.__repr__(outerOperator, isOuterLeftChild)
 
-    def __repr__(self):
-        if self._operator:
-            return "({}{}{})".format(self._left, self._operator, self._right)
+    '''
+    parentOperator: 外层表达式的符号
+    parentLeftChild: 在外层表达式的左边还是右边，左边是True， 右边为False
+    '''
+
+    def __repr__(self, outerOperator=None, isOuterLeftChild=None):
+        # template = "{}{}{}" if self._operator == '*' or self._operator == '/' else "({}{}{})"
+
+        if isOuterLeftChild:
+            if (outerOperator == '*' or outerOperator == '/') and (self._operator == '+' or self._operator == '-'):
+                template = "({}{}{})"
+            else:
+                template = "{}{}{}"
         else:
-            return '{}'.format(self._result)
+            if outerOperator == '/' or (outerOperator == '*' and (self._operator == '+' or self._operator == '-')) or (outerOperator == '-' and (self._operator == '+' or self._operator == '-')):
+                template = "({}{}{})"
+            else:
+                template = "{}{}{}"
+
+        return template.format(self._left.__repr__(self._operator, True), self._operator, self._right.__repr__(self._operator, False))
 
 
 class N(Expr):
-    def __init__(self,  result):
-        super().__init__(None, None, None, result)
+    def __init__(self,  result: str):
+        super().__init__(None, None, None, int(result))
 
-    def unfold(self):
+    def normalize(self):
         return self
 
     def __eq__(self, other):
@@ -140,8 +164,11 @@ class N(Expr):
     def __hash__(self) -> int:
         return self._result.__hash__()
 
-    def __str__(self) -> str:
-        return self._result
+    def __str__(self, a1=None, a2=None):
+        return self.__repr__()
+
+    def __repr__(self, a1=None, a2=None):
+        return '{}'.format(str(self._result))
 
 
 class _24(object):
@@ -210,6 +237,9 @@ class _24(object):
 #     print("NO！")
 
 
-#print("\n".join(_24.calcuate(" 2 10 12 5 ")))
-#print("\n".join(_24.calcuate(" 12 12 12 12  ")))
+# print("\n".join(_24.calcuate(" 2 10 12 5 ")))
+# print("\n".join(_24.calcuate(" 12 12 12 12  ")))
+# print("\n".join(_24.calcuate(" 3 12 13 1 ")))
+# print("\n".join(_24.calcuate(" 2 5 9 11 ")))
+#print("\n".join(_24.calcuate(" 5, 8, 3, 4 ")))
 

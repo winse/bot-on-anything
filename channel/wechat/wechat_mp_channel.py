@@ -42,7 +42,7 @@ class WechatSubsribeAccount(Channel):
         robot.run()
 
     def handle(self, msg, count=1):
-        if msg.content == "继续":
+        if msg.content == "继续" or msg.content == "1" or msg.content == "+":
             return self.get_un_send_content(msg.source)
 
         context = dict()
