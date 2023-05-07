@@ -19,6 +19,15 @@ class Expr(object):
             self.normalize()
 
     def normalize(self):
+        # 大的在前
+        if self._operator == '+' or self._operator == '*':
+            if self._left._result < self._right._result:
+                self.set_expression(
+                    self._right,
+                    self._left,
+                    self._operator
+                )
+
         # 左边括号（表达式）优先
         if not isinstance(self._right, N):  # 右边是表达式，拆成左表达式的形式
             # ? + (? - ?)
@@ -41,29 +50,26 @@ class Expr(object):
                             '/' if self._right._operator == '*' else '*')
                     )
                     self.normalize()  # 继续处理
-        # 左边是表达式，+*优先，大数优先
+        # 左边是表达式，+*优先 或者 大数优先
         elif not isinstance(self._left, N):
             # (? - ?) + ?
             if self._operator == '+' or self._operator == '-':
                 _mid = self._left._right
                 if (self._left._operator == '-' and self._operator == '+') or (self._left._operator == self._operator and self._right._result > _mid._result):
-                    self._left.set_expression(
-                        self._left._left,
-                        self._right,
-                        self._operator
-                    )
-                    self.set_expression(self._left, _mid, self._left._operator)
+                    self.set_expression(
+                        Expr(self._left._left, self._right, self._operator),
+                        _mid,
+                        self._left._operator)
                     self.normalize()  # 继续处理
             # (? / ?) * ?
             elif self._operator == '*' or self._operator == '/':
                 _mid = self._left._right
                 if (self._left._operator == '/' and self._operator == '*') or (self._left._operator == self._operator and self._right._result > _mid._result):
-                    self._left.set_expression(
-                        self._left._left,
-                        self._right,
-                        self._operator
+                    self.set_expression(
+                        Expr(self._left._left, self._right,  self._operator),
+                        _mid,
+                        self._left._operator
                     )
-                    self.set_expression(self._left, _mid, self._left._operator)
                     self.normalize()  # 继续处理
 
         return self
@@ -130,16 +136,17 @@ class Expr(object):
     def __repr__(self, outerOperator=None, isOuterLeftChild=None):
         # template = "{}{}{}" if self._operator == '*' or self._operator == '/' else "({}{}{})"
 
-        if isOuterLeftChild:
-            if (outerOperator == '*' or outerOperator == '/') and (self._operator == '+' or self._operator == '-'):
-                template = "({}{}{})"
-            else:
-                template = "{}{}{}"
-        else:
-            if outerOperator == '/' or (outerOperator == '*' and (self._operator == '+' or self._operator == '-')) or (outerOperator == '-' and (self._operator == '+' or self._operator == '-')):
-                template = "({}{}{})"
-            else:
-                template = "{}{}{}"
+        template = "({}{}{})"
+        # if isOuterLeftChild:
+        #     if (outerOperator == '*' or outerOperator == '/') and (self._operator == '+' or self._operator == '-'):
+        #         template = "({}{}{})"
+        #     else:
+        #         template = "{}{}{}"
+        # else:
+        #     if outerOperator == '/' or (outerOperator == '*' and (self._operator == '+' or self._operator == '-')) or (outerOperator == '-' and (self._operator == '+' or self._operator == '-')):
+        #         template = "({}{}{})"
+        #     else:
+        #         template = "{}{}{}"
 
         return template.format(self._left.__repr__(self._operator, True), self._operator, self._right.__repr__(self._operator, False))
 
@@ -237,9 +244,10 @@ class _24(object):
 #     print("NO！")
 
 
-# print("\n".join(_24.calcuate(" 2 10 12 5 ")))
-# print("\n".join(_24.calcuate(" 12 12 12 12  ")))
-# print("\n".join(_24.calcuate(" 3 12 13 1 ")))
-# print("\n".join(_24.calcuate(" 2 5 9 11 ")))
+#print("\n".join(_24.calcuate(" 2 10 12 5 ")))
+#print("\n".join(_24.calcuate(" 12 12 12 12  ")))
+#print("\n".join(_24.calcuate(" 3 12 13 1 ")))
+#print("\n".join(_24.calcuate(" 2 5 9 11 ")))
 #print("\n".join(_24.calcuate(" 5, 8, 3, 4 ")))
+#print("\n".join(_24.calcuate(" 13 3 4 6 ")))
 
