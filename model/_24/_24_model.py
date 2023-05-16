@@ -15,5 +15,8 @@ class _24Model(Model):
         log.info("24点")
 
     def reply(self, query, context=None):
-        list = _24.calcuate(query)
-        return '\n'.join(list) if len(list) > 0 else "格式：num num num num, 比如输入：@me 12 12 12 12 "
+        try:
+            list = _24.calcuate(query)
+            return '\n'.join(list) if len(list) > 0 else "None"
+        except:
+            return "格式：num num num num, 比如输入：@me 12 12 12 12 "

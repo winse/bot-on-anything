@@ -184,6 +184,8 @@ class _24(object):
     def calcuate(query):
         query = query.strip()
         my_list = re.split('[,| ]+', query)
+        if len(my_list) != 4:
+            raise ValueError("please input four number.")  
 
         # 对4个整数随机排列的列表
         result = [c for c in permutations(my_list, 4)]
