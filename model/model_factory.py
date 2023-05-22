@@ -33,6 +33,10 @@ def create_bot(model_type):
         from model.google.bard_model import BardModel
         return BardModel()
 
+    elif model_type == 'tongyi':
+        from model.tongyi.tongyi_model import TongyiModel
+        return TongyiModel()
+
     elif model_type == '24':
         from model._24._24_model import _24Model
         return _24Model()
