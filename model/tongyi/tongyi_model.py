@@ -63,7 +63,7 @@ class TongyiModel(Model):
 
             print(context)
             return context['reply']
-        except e:
+        except Exception as e:
             print(e)
             raise Exception("[TONGYI] chat获取失败!!!")
 
