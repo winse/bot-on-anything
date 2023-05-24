@@ -29,16 +29,33 @@ headers = {
     # 'cookie': userinfo.cookie # cookie
 }
 
+tongyi_token = ''
+tongyi_cookie = ''
+
 # https://github.com/dfvips/aliyuntongyiqianwen/blob/main/tongyi.py
 class TongyiModel(Model):
 
     def __init__(self):
-        self.token = model_conf("tongyi").get('token')
-        self.cookie = model_conf("tongyi").get('cookie')
+        global tongyi_token, tongyi_cookie
+        if tongyi_token == '':
+            tongyi_token = model_conf("tongyi").get('token')
+        if tongyi_cookie == '':
+            tongyi_cookie = model_conf("tongyi").get('cookie').replace('"', '')
         self.openSearch = model_conf("tongyi").get('openSearch')
 
     def reply(self, query, context=None):
         logger.info("[TONGYI] query={}".format(query))
+
+        global tongyi_token, tongyi_cookie
+        if query.startswith("[token]"):
+            tongyi_token = query.replace('[token]', '').strip()
+            context['reply'] = tongyi_token
+            return context['reply']
+        if query.startswith("[cookie]"):
+            tongyi_cookie = query.replace('[cookie]', '').replace('"', '').strip()
+            context['reply'] = tongyi_cookie
+            return context['reply']
+
         try:
             user_id = context.get('session_id') or context.get('from_user_id')
             context['query'] = query
@@ -69,10 +86,12 @@ class TongyiModel(Model):
 
     # 添加会话凭证
     def addSession(self, context):
-        res = requests.post(url='https://tongyi.aliyun.com/qianwen/addSession', headers=self._create_header(), json={
+        headers = self._create_header()
+        ##print(headers)
+        res = requests.post(url='https://tongyi.aliyun.com/qianwen/addSession', headers=headers, json={
             'firstQuery': context['query']
         })
-        logger.debug("[TONGYI] query={}, res={}".format(context['query'], str(res)))
+        logger.info("[TONGYI] query={}, res={}".format(context['query'], str(res.text)))
 
         return res.json()['data']
 
@@ -81,7 +100,7 @@ class TongyiModel(Model):
         res = requests.post(url='https://tongyi.aliyun.com/qianwen/queryMessageList', headers=self._create_header(), json={
             'sessionId': s
         })
-        logger.debug("[TONGYI] sessionId={}, res={}".format(str(s), str(res)))
+        logger.info("[TONGYI] sessionId={}, res={}".format(str(s), str(res.text)))
 
         data = res.json()['data']
         if isinstance(data, list) and len(data) != 0:
@@ -139,6 +158,6 @@ class TongyiModel(Model):
         chat_headers = headers.copy()
         if event_stream:
             chat_headers['accept'] = 'text/event-stream' # 启用时间流
-        chat_headers['X-Xsrf-Token'] = self.token
-        chat_headers['cookie'] = self.cookie
+        chat_headers['X-Xsrf-Token'] = tongyi_token
+        chat_headers['cookie'] = tongyi_cookie
         return chat_headers
